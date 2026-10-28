@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useWeather } from '../hooks/useWeather';
 import { themeFor } from '../utils/theme';
@@ -36,6 +36,14 @@ export default function Index() {
     day: 'numeric',
   });
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      void searchLocations(query);
+    }, query.trim().length < 2 ? 0 : 300);
+
+    return () => clearTimeout(timeout);
+  }, [query, searchLocations]);
+
   const hourly = data?.hourly?.time
     ? data.hourly.time
         .map((time: string, index: number) => ({
@@ -68,10 +76,8 @@ export default function Index() {
             style={styles.searchInput}
             accessibilityLabel="Search for a location"
           />
-          <Pressable style={styles.searchButton} onPress={() => void searchLocations(query)}>
-            <Text style={styles.searchButtonText}>{searching ? '…' : 'Search'}</Text>
-          </Pressable>
         </View>
+        {searching ? <Text style={styles.searching}>Searching locations…</Text> : null}
         <Pressable style={styles.currentLocationButton} onPress={() => void useCurrentLocation()}>
           <Text style={styles.currentLocationText}>Use current location</Text>
         </Pressable>
@@ -135,8 +141,7 @@ const styles = StyleSheet.create({
   date: { fontSize: 16, color: '#111', marginBottom: 16 },
   searchRow: { flexDirection: 'row', gap: 8 },
   searchInput: { flex: 1, minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: '#777', paddingHorizontal: 12, color: '#111', backgroundColor: 'rgba(255,255,255,0.72)' },
-  searchButton: { minHeight: 44, paddingHorizontal: 16, borderRadius: 10, backgroundColor: '#393b4b', alignItems: 'center', justifyContent: 'center' },
-  searchButtonText: { color: '#fff', fontWeight: '600' },
+  searching: { color: '#333', fontSize: 13, marginTop: 6 },
   currentLocationButton: { alignSelf: 'flex-start', paddingVertical: 10 },
   currentLocationText: { color: '#252638', fontSize: 14, textDecorationLine: 'underline' },
   error: { color: '#8a1c1c', marginBottom: 8 },

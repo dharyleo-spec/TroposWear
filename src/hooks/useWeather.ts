@@ -20,6 +20,7 @@ export function useWeather() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const requestId = useRef(0);
+  const searchId = useRef(0);
 
   const loadWeather = useCallback(async (latitude: number, longitude: number, name: string) => {
     const id = ++requestId.current;
@@ -52,10 +53,13 @@ export function useWeather() {
   const searchLocations = useCallback(async (query: string) => {
     const value = query.trim();
     if (value.length < 2) {
+      searchId.current += 1;
       setSearchResults([]);
+      setSearching(false);
       return;
     }
 
+    const id = ++searchId.current;
     setSearching(true);
     setError(null);
     try {
@@ -64,17 +68,22 @@ export function useWeather() {
       );
       if (!response.ok) throw new Error('Location search failed. Try again.');
       const result = (await response.json()) as GeocodingResponse;
-      setSearchResults(result.results ?? []);
-      if (!result.results?.length) setError('No matching locations found.');
+      if (id === searchId.current) {
+        setSearchResults(result.results ?? []);
+        if (!result.results?.length) setError('No matching locations found.');
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Location search failed.');
-      setSearchResults([]);
+      if (id === searchId.current) {
+        setError(e instanceof Error ? e.message : 'Location search failed.');
+        setSearchResults([]);
+      }
     } finally {
-      setSearching(false);
+      if (id === searchId.current) setSearching(false);
     }
   }, []);
 
   const selectLocation = useCallback((place: WeatherLocation) => {
+    searchId.current += 1;
     setSearchResults([]);
     const name = [place.name, place.admin1, place.country]
       .filter((part, index, all): part is string => Boolean(part) && all.indexOf(part) === index)
